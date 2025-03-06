@@ -1,0 +1,60 @@
+import uproot
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.interpolate import UnivariateSpline
+
+# Define the path length function using degrees
+def path_length(angle_deg):
+    if angle_deg == 0:
+        return 200  # Handle angle = 0 separately to avoid division by zero
+    return 32 / np.sin(np.radians(angle_deg))  # Convert degrees to radians
+
+# List of ROOT files and their corresponding angles
+root_files = {
+    "mc_muangle_run900_000_Test_1000evt_mu-_5.0_5.0.root": 0,
+    "mc_muangle_run920_000_Test_1000evt_mu-_5.0_5.0.root": 20,
+    "mc_muangle_run930_000_Test_1000evt_mu-_5.0_5.0.root": 30,
+    "mc_muangle_run940_000_Test_1000evt_mu-_5.0_5.0.root": 40,
+    "mc_muangle_run945_000_Test_1000evt_mu-_5.0_5.0.root": 45,
+    "mc_muangle_run950_000_Test_1000evt_mu-_5.0_5.0.root": 50,
+    "mc_muangle_run960_000_Test_1000evt_mu-_5.0_5.0.root": 60,
+    "mc_muangle_run970_000_Test_1000evt_mu-_5.0_5.0.root": 70,
+    "mc_muangle_run980_000_Test_1000evt_mu-_5.0_5.0.root": 80,
+    "mc_muangle_run999_000_Test_1000evt_mu-_5.0_5.0.root": 10,
+}
+
+# Define some distinct colors for better differentiation
+line_colors = ['b', 'g', 'r', 'c', 'm', 'y', 'k', 'orange', 'purple', 'brown']
+
+# Initialize list to store the histograms
+histograms = []
+highest_values = []  # To store the highest values for sorting the legend
+
+# Loop through each file and normalize the histograms by path length
+for i, (file_name, angle) in enumerate(root_files.items()):
+    with uproot.open(file_name) as file:
+        histogram = file["cerWLcaptured;1"]  # Ensure correct key
+        values = histogram.values()
+        x_values = histogram.axes[0].edges()  # Get the bin edges (wavelengths)
+        integral = values.sum()
+        norm_factor = path_length(angle)  # Get the path length for the angle
+# Get the highest value of the normalized histogram for sorting the legend
+        highest_value = normalized_values.max()
+
+        # Store the normalized histogram, angle, and highest value for sorting
+        histograms.append((normalized_values, x_values, angle, line_colors[i]))
+        highest_values.append((highest_value, angle))
+
+# Sort the legend by the highest values (in descending order)
+sorted_indices = np.argsort([hv[0] for hv in highest_values])[::-1]
+
+# Plot all the normalized histograms
+plt.figure(figsize=(10, 6))
+
+# Plot each normalized histogram with the corresponding colors
+for normalized_values, x_values, angle, color in histograms:
+    plt.plot(x_values[:-1], normalized_values, label=f"Run {angle}°", color=color)  # Use x-values for the wavelength
+
+# Reorder the legend based on the sorted highest values
+sorted_legend_labels = [f"Run {highest_values[i][1]}°" for i in sorted_indices]
+plt.legend(sorted_legend_labels)
