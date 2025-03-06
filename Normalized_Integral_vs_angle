@@ -1,0 +1,61 @@
+import uproot
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.interpolate import UnivariateSpline
+
+# Define the path length function using degrees
+def path_length(angle_deg):
+    if angle_deg == 0:
+        return 200
+    return 32 / np.sin(np.radians(angle_deg))  # Convert degrees to radians
+
+# List of ROOT files and their corresponding angles
+root_files = {
+    "mc_muangle_run900_000_Test_1000evt_mu-_5.0_5.0.root": 0,
+    "mc_muangle_run920_000_Test_1000evt_mu-_5.0_5.0.root": 20,
+    "mc_muangle_run930_000_Test_1000evt_mu-_5.0_5.0.root": 30,
+    "mc_muangle_run940_000_Test_1000evt_mu-_5.0_5.0.root": 40,
+    "mc_muangle_run945_000_Test_1000evt_mu-_5.0_5.0.root": 45,
+    "mc_muangle_run950_000_Test_1000evt_mu-_5.0_5.0.root": 50,
+    "mc_muangle_run960_000_Test_1000evt_mu-_5.0_5.0.root": 60,
+    "mc_muangle_run970_000_Test_1000evt_mu-_5.0_5.0.root": 70,
+    "mc_muangle_run980_000_Test_1000evt_mu-_5.0_5.0.root": 80,
+    "mc_muangle_run999_000_Test_1000evt_mu-_5.0_5.0.root": 10,
+}
+
+# Initialize lists to store angles and normalized integrals
+angles = []
+normalized_integrals = []
+
+# Loop through each file
+for file_name, angle in root_files.items():
+    with uproot.open(file_name) as file:
+        histogram = file["cerWLcaptured;1"]  # Ensure correct key
+        integral = histogram.values().sum()
+        norm_factor = path_length(angle)
+        normalized_integral = integral / norm_factor
+
+        angles.append(angle)
+        normalized_integrals.append(normalized_integral)
+# Sort data
+sorted_indices = np.argsort(angles)
+angles = np.array(angles)[sorted_indices]
+normalized_integrals = np.array(normalized_integrals)[sorted_indices]
+
+# Spline fitting (s=0.1 controls smoothness, adjust as needed)
+spline = UnivariateSpline(angles, normalized_integrals, s=0.1)
+
+# Generate smooth fit curve
+angle_range = np.linspace(min(angles), max(angles), 200)
+spline_values = spline(angle_range)
+
+# Plot data and spline fit
+plt.figure(figsize=(10, 6))
+plt.plot(angles, normalized_integrals, 'bo', label="Data")
+plt.plot(angle_range, spline_values, 'g-', label="Spline Fit")
+plt.xlabel("Incident Angle (degrees)")
+plt.ylabel("Normalized Integral")
+plt.title("Spline Fit of Normalized Integral vs Incident Angle")
+plt.grid(True)
+plt.legend()
+plt.show()
